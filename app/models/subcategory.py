@@ -9,5 +9,5 @@ class Subcategory(Base):
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text)
-
-    category = relationship("Category", backref="subcategories")
+    category = relationship("Category", back_populates="subcategories")
+    

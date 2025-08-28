@@ -26,7 +26,7 @@ class Ticket(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
-    subcategory_id = Column(Integer, ForeignKey("subcategories.id"), nullable=False)
+    subcategory_id = Column(Integer, ForeignKey("subcategories.id",  ondelete="SET NULL"), nullable=True)
     title = Column(String(255), nullable=False)
     initial_description = Column(Text, nullable=False)
     status = Column(Enum(TicketStatus), default=TicketStatus.open, nullable=False)
@@ -35,10 +35,17 @@ class Ticket(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     closed_at = Column(TIMESTAMP, nullable=True)
 
-    user = relationship("User", foreign_keys=[user_id])
-    agent = relationship("User", foreign_keys=[agent_id])
-    category = relationship("Category")
-    subcategory = relationship("Subcategory")
+   
     messages = relationship("Message", back_populates="ticket")
-    notes = relationship("TicketNote", back_populates="ticket")
+    
+    user = relationship("User", back_populates="created_tickets", foreign_keys=[user_id])
+    
+    # Link to the agent assigned to the ticket
+    agent = relationship("User", back_populates="assigned_tickets", foreign_keys=[agent_id])
+
+    # Link to the ticket's category
+    category = relationship("Category")
+    
+    # Link to the ticket's subcategory
+    subcategory = relationship("Subcategory")
 
