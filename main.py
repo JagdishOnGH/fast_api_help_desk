@@ -6,6 +6,7 @@ from app.routers import user
 from app.database import Base, engine
 from app.auth import router as auth
 from app.routers import ticket
+from app.routers import ticket_transfer
 from app.routers import category
 from app.core.seed_category import seed_categories
 
@@ -27,5 +28,6 @@ def on_startup():
 app.include_router(user.router)
 app.include_router(auth)
 app.include_router(ticket.router)
+app.include_router(ticket_transfer.router)
 app.include_router(category.router)
 

@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models import user as user_model
 from app.models.ticket import TicketPriority, TicketStatus
-from app.models.ticket_transfer import TicketTransfer
+from app.models.ticket_transfer import TicketTransfer, TransferStatus
 import random 
 
 from app.models.ticket import Ticket as ticket_model
@@ -12,9 +12,16 @@ from app.models.subcategory import Subcategory
 from typing import Optional
 
 
+
 def get_ticket(db: Session, ticket_id: int):
     """Gets a single ticket by its ID."""
     return db.query(ticket_model).filter(ticket_model.id == ticket_id).first()
+
+def get_transfer_request(db: Session, ticket_transfer_id: int):
+    return db.query(TicketTransfer).filter(ticket_transfer_id == TicketTransfer.id).first()
+
+def get_transfer_requests(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(TicketTransfer).offset(skip).limit(limit).all()
 
 def get_tickets(db: Session, user_id: int = None, agent_id: int = None, skip: int = 0, limit: int = 100):
     """
@@ -40,19 +47,6 @@ def update_ticket_status(db: Session, db_ticket: ticket_model, status: TicketSta
     db.refresh(db_ticket)
     return db_ticket
 
-def create_ticket_transfer_request(db: Session, db_ticket: ticket_model, from_agent_id: int, to_agent_id: int, reason: str):
-    """Creates a ticket transfer request record."""
-    transfer_request = TicketTransfer(
-        ticket_id=db_ticket.id,
-        from_agent_id=from_agent_id,
-        to_agent_id=to_agent_id,
-        request_reason=reason,
-        status='pending'
-    )
-    db.add(transfer_request)
-    db.commit()
-    db.refresh(transfer_request)
-    return transfer_request
 
 def get_dashboard_stats(db: Session) -> DashboardStats:
     """Calculates and returns dashboard statistics."""
@@ -166,4 +160,22 @@ def create_ticket(db: Session, ticket_data: ticket_schema, user_id: int):
     db.refresh(db_ticket)
     return db_ticket
 
-#
+def create_ticket_transfer_request(db: Session, db_ticket: ticket_model, from_agent_id: int, to_agent_id: int, reason: str):
+    """Creates a ticket transfer request record."""
+    transfer_request = TicketTransfer(
+        ticket_id=db_ticket.id,
+        from_agent_id=from_agent_id,
+        to_agent_id=to_agent_id,
+        request_reason=reason,
+        status= TransferStatus.pending
+    )
+    db.add(transfer_request)
+    db.commit()
+    db.refresh(transfer_request)
+    return transfer_request
+
+def approve_ticket_transfer(db: Session, transfer_request: TicketTransfer):
+    db.add
+    db.commit()
+    db.refresh(transfer_request)
+    return transfer_request

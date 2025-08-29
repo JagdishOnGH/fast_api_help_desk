@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -10,6 +11,8 @@ from app.models import user as user_model
 from app.models.user import UserRole
 from app.models.category import Category
 from app.models.subcategory import Subcategory
+from app.models.ticket_transfer import TicketTransfer, TransferStatus
+from app.models.ticket import TicketPriority, TicketStatus
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
 
@@ -58,58 +61,65 @@ def update_ticket_status(
 
     return ticket_ops.update_ticket_status(db, db_ticket=db_ticket, status=status_update.status)
 
-@router.post("/{ticket_id}/transfer", status_code=status.HTTP_202_ACCEPTED)
-def request_ticket_transfer(
-    ticket_id: int,
-    transfer_request: ticket_schema.TicketTransferRequestCreate,
-    db: Session = Depends(get_db),
-    current_user: user_model.User = Depends(get_current_user)
-):
-    """Allows an assigned agent to request a ticket transfer."""
-    if current_user.role != UserRole.agent:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only agents can transfer tickets")
+# @router.post("/{ticket_id}/transfer", status_code=status.HTTP_202_ACCEPTED)
+# def request_ticket_transfer(
+#     ticket_id: int,
+#     transfer_request: ticket_schema.TicketTransferRequestCreate,
+#     db: Session = Depends(get_db),
+#     current_user: user_model.User = Depends(get_current_user)
+# ):
+#     """Allows an assigned agent to request a ticket transfer."""
 
-    db_ticket = ticket_ops.get_ticket(db, ticket_id)
-    if not db_ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-
-    if db_ticket.agent_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to transfer this ticket")
-
-    # Check if the target user is an agent
-    target_agent = db.query(user_model.User).filter(user_model.User.id == transfer_request.to_agent_id).first()
-    if not target_agent or target_agent.role != UserRole.agent:
-        raise HTTPException(status_code=404, detail="Target agent not found or is not an agent")
-
-    ticket_ops.create_ticket_transfer_request(
-        db=db,
-        db_ticket=db_ticket,
-        from_agent_id=current_user.id,
-        to_agent_id=transfer_request.to_agent_id,
-        reason=transfer_request.reason
-    )
-    return {"message": "Ticket transfer request submitted for admin approval."}
+#     db_ticket = ticket_ops.get_ticket(db, ticket_id)
+#     if not db_ticket:
+#         raise HTTPException(status_code=404, detail="Ticket not found")
+    
+#     #if agent is null and role is admin allow admin to initiate transfer
+#     if db_ticket.agent_id == None and current_user.role == UserRole.admin:
+#         return ticket_ops.create_ticket_transfer_request(db, db_ticket=db_ticket, from_agent_id=current_user.id, to_agent_id=transfer_request.to_agent_id, reason=transfer_request.reason)
+    
+#     if current_user.role != UserRole.agent:
+#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only agents can transfer tickets")
 
 
-@router.post("/{ticket_id}/transfer/approve", status_code=status.HTTP_202_ACCEPTED)
-def approve_ticket_transfer(
-        ticket_id: int,
-        db: Session = Depends(get_db),
-        current_user: user_model.User = Depends(get_current_user)
-    ):
-    """Allows an admin to approve a ticket transfer request."""
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can approve ticket transfers")
+#     if db_ticket.agent_id != current_user.id:
+#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to transfer this ticket")
 
-    db_ticket = ticket_ops.get_ticket(db, ticket_id)
-    if not db_ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+#     # Check if the target user is an agent
+#     target_agent = db.query(user_model.User).filter(user_model.User.id == transfer_request.to_agent_id).first()
+#     if not target_agent or target_agent.role != UserRole.agent:
+#         raise HTTPException(status_code=404, detail="Target agent not found or is not an agent")
 
-    if db_ticket.status != TicketStatus.pending:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket transfer request is not pending approval")
+#     ticket_ops.create_ticket_transfer_request(
+#         db=db,
+#         db_ticket=db_ticket,
+#         from_agent_id=current_user.id,
+#         to_agent_id=transfer_request.to_agent_id,
+#         reason=transfer_request.reason
+#     )
+#     return {"message": "Ticket transfer request submitted for admin approval."}
 
-    ticket_ops.approve_ticket_transfer(db, db_ticket)
-    return {"message": "Ticket transfer request approved."}
+
+# @router.post("/{transfer_request_id}/transfer/approve", status_code=status.HTTP_202_ACCEPTED)
+# def approve_ticket_transfer(
+#         transfer_request_id: int,
+#         db: Session = Depends(get_db),
+        
+#         current_user: user_model.User = Depends(get_current_user)
+#     ):
+#     """Allows an admin to approve a ticket transfer request."""
+#     if current_user.role != UserRole.admin:
+#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can approve ticket transfers")
+
+#     db_ticket = ticket_ops.get_transfer_request(db, transfer_request_id)
+#     if not db_ticket:
+#         raise HTTPException(status_code=404, detail="Ticket Transfer Request not found")
+
+#     if db_ticket.status != TransferStatus.pending:
+#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket transfer request is not pending approval")
+
+#     ticket_ops.approve_ticket_transfer(db, db_ticket)
+#     return {"message": "Ticket transfer request approved."}
 
 
 #create ticket  

@@ -85,3 +85,26 @@ def delete_category(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete a category.")
     return category_ops.delete_category(db, category_id)
 
+
+#Post request to create sub-category under category, raise no category founder under {id}
+@router.post("/{category_id}/subcategories", response_model=category_schema.Subcategory)
+def create_subcategory_with_category_id(
+    category_id: int,
+    subcategory_data: category_schema.SubcategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Creates a new subcategory under a specific category.
+    """
+    if(current_user.role != UserRole.admin and current_user.role != UserRole.agent):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to create a subcategory.")
+    #if category_id is not valid raise error
+    if not db.query(Category).filter(Category.id == category_id).first():
+        raise HTTPException(status_code=404, detail="Category not found under {id}")
+    return category_ops.create_subcategory_with_category_id(db, subcategory_data, category_id)
+
+
+
+
+

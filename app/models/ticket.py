@@ -11,6 +11,7 @@ class TicketStatus(PyEnum):
     resolved = "resolved"
     closed = "closed"
     reopened = "reopened"
+    
 
 class TicketPriority(PyEnum):
     low = "low"

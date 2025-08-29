@@ -67,3 +67,12 @@ def all_categories(db: Session):
 def category_by_id(db: Session, category_id: int):
    #id,name and subcategories(name, id)
    return db.query(Category).filter(Category.id == category_id).first()
+
+def create_subcategory_with_category_id(db: Session, subcategory_data: subcategory_schema, category_id: int):
+    #if category_id is not valid raise error
+    db_subcategory = Subcategory(**subcategory_data.model_dump())
+    db_subcategory.category_id = category_id
+    db.add(db_subcategory)
+    db.commit()
+    db.refresh(db_subcategory)
+    return db_subcategory   
