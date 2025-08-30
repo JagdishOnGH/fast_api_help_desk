@@ -11,6 +11,7 @@ class TicketStatus(PyEnum):
     resolved = "resolved"
     closed = "closed"
     reopened = "reopened"
+    requested_reopen = "requested_reopen"
     
 
 class TicketPriority(PyEnum):
@@ -35,6 +36,7 @@ class Ticket(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     closed_at = Column(TIMESTAMP, nullable=True)
+    
 
    
     messages = relationship("Message", back_populates="ticket")

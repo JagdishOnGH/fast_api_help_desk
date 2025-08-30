@@ -134,3 +134,79 @@ def create_ticket(
         raise HTTPException(status_code=404, detail="Category not found")
     
     return ticket_ops.create_ticket(db, ticket_data, current_user.id)
+
+
+@router.post("/{ticket_id}/request/reopen", response_model=ticket_schema.Ticket)
+def request_reopen_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: user_model.User = Depends(get_current_user)
+):
+    """Allows a user to reopen a closed ticket."""
+    db_ticket = ticket_ops.get_ticket(db, ticket_id)
+    if not db_ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    if db_ticket.status != TicketStatus.closed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket is not closed")
+    
+    return ticket_ops.request_reopen_ticket(db, db_ticket)
+
+@router.get("/reopen/requests?user_email={user_email}&username={username}&ticket_title={ticket_title}")
+def get_reopen_requests(
+    user_email: str | None = None,
+    username: str | None = None,
+    ticket_title: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: user_model.User = Depends(get_current_user)
+
+):
+    if(current_user.role != UserRole.admin):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can get reopen requests")
+    search_query = user_email or username or ticket_title
+    return ticket_ops.get_all_reopen_requests(db, search_query)
+
+@router.post("/{ticket_id}/reopen", response_model=ticket_schema.Ticket)
+def reopen_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: user_model.User = Depends(get_current_user)
+):
+    """Allows a user to reopen a closed ticket."""
+    #if role is admin OR role is assigned agent he can reopen
+
+    db_ticket = ticket_ops.get_ticket(db, ticket_id)
+
+    if not db_ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    
+
+    if db_ticket.status != TicketStatus.requested_reopen:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ticket is not requested to reopen")
+        
+    
+# ✅ Refactored version
+    can_accept = (
+    (db_ticket.agent_id is None and current_user.role == UserRole.admin)
+    or
+    (db_ticket.agent_id == current_user.id and current_user.role == UserRole.agent)
+    )
+
+    if can_accept:
+        return ticket_ops.accept_reopen_ticket(db, db_ticket)
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to reopen this ticket")
+
+
+@router.get("/search", response_model=List[ticket_schema.Ticket])
+def search_tickets(
+    search_query: str,
+    db: Session = Depends(get_db),
+    current_user: user_model.User = Depends(get_current_user)
+):
+    """Search for tickets by title or user's name."""
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can search tickets")
+    return ticket_ops.search_tickets(db, search_query)
+

@@ -5,4 +5,5 @@ from app.models.subcategory import Subcategory
 from app.models.agent_category_assignment import AgentCategoryAssignment
 from app.models.message import Message
 from app.models.user import User
+from app.database import Base
 

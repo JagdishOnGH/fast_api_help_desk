@@ -1,11 +1,12 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.orm import Session,joinedload
+from sqlalchemy import func, or_, String
 from app.models import user as user_model
-from app.models.ticket import TicketPriority, TicketStatus
+from app.models.ticket import Ticket, TicketPriority, TicketStatus
 from app.models.ticket_transfer import TicketTransfer, TransferStatus
 import random 
 
 from app.models.ticket import Ticket as ticket_model
+from app.models.user import User
 from app.schemas.ticket import Ticket as ticket_schema, DashboardStats
 from app.models.category import Category
 from app.models.subcategory import Subcategory
@@ -179,3 +180,49 @@ def approve_ticket_transfer(db: Session, transfer_request: TicketTransfer):
     db.commit()
     db.refresh(transfer_request)
     return transfer_request
+
+from sqlalchemy import or_
+
+def get_all_reopen_requests(db: Session, search_query: str | None = None):
+    query = db.query(Ticket).filter(Ticket.status == TicketStatus.requested_reopen)
+
+    if search_query:
+        search = f"%{search_query}%"  # for ILIKE search
+        query = query.join(Ticket.user).filter(
+            or_(
+                Ticket.id.cast(String).ilike(search),
+                Ticket.title.ilike(search),
+                User.name.ilike(search),
+                User.email.ilike(search)
+            )
+        )
+
+    return query.all()
+
+
+def request_reopen_ticket(db: Session, ticket: Ticket):
+    ticket.status = TicketStatus.requested_reopen
+    db.commit()
+    db.refresh(ticket)
+    return ticket
+
+def search_tickets(db: Session, search_query: str):
+
+    return (
+        db.query(Ticket)
+        .join(User, Ticket.user_id == User.id)  # join with user table
+        .options(joinedload(Ticket.user))       # eager load user data
+        .filter(
+            or_(
+                Ticket.title.ilike(f"%{search_query}%"),
+                User.name.ilike(f"%{search_query}%")
+            )
+        )
+        .all()
+    )
+
+def accept_reopen_ticket(db: Session, ticket: Ticket):
+    ticket.status = TicketStatus.reopened
+    db.commit()
+    db.refresh(ticket)
+    return ticket
