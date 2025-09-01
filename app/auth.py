@@ -15,13 +15,8 @@ def login(
 ):
     # Use form_data.username as email
     user = db.query(User).filter(User.email == form_data.username).first()
-    print("------------")
-    print(user)
-    print("------------")
+
     validationResult = verify_password(form_data.password, user.password_hash)
-    print("------------")
-    print(validationResult)
-    print("------------")
     if not user or not validationResult:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

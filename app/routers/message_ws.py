@@ -54,7 +54,6 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int, db: Session =
     # Get token from query params or headers
     token = websocket.query_params.get("token")
     if not token:
-        print("No token provided")
         await websocket.close(code=1008)
         return
 
@@ -63,13 +62,10 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int, db: Session =
         payload = security.decode_access_token(token)
         user_id: int | None = payload.get("sub")
         if user_id is None:
-            print("Invalid token")
             await websocket.close(code=1008)
             return
        
     except JWTError:
-        print("Invalid token")
-
         await websocket.close(code=1008)
         return
 
@@ -83,16 +79,16 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int, db: Session =
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     print("Ticket:", ticket.ticket_uid)
     if not ticket:
-        print("Ticket not found")
+        
         await websocket.close(code=1008)
         return
 
     if current_user.role == UserRole.user and ticket.user_id != current_user.id:
-        print("User not authorized")
+        
         await websocket.close(code=1008)
         return
     if current_user.role == UserRole.agent and ticket.agent_id != current_user.id:
-        print("Agent not authorized")
+        
         await websocket.close(code=1008)
         return
     # Admins pass automatically
@@ -112,15 +108,11 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int, db: Session =
                 content=message.content,
                 sender_id=current_user.id,
                 )
-            #ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
-            #sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-            #content = Column(Text, nullable=False)
+            
             db.add(new_message)
             db.commit()
             db.refresh(new_message)
-            #send message, sender name, sender id, for ticket
             await websocket.send_json({"message": new_message.content, "sender_name": current_user.name, "sender_id": current_user.id})
         except Exception as e:
-            print("WebSocket error:", e)
             await websocket.close(code=1011)
             break
