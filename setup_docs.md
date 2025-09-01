@@ -17,7 +17,7 @@ depedency used:
         1. psycopg2
     setup instruction
     1. create a virtual environment
-    2. activate the virtual environment
+    2. activate the virtual environment venv
     3. install the required dependencies
     4. create a database
     5. run the migrations
@@ -25,4 +25,16 @@ depedency used:
  
  put database credentials in .env file
  for dev: database.py has DATABASE_URL = ""
- 
+
+
+ alembic commands to generate and push migrations for new projects
+    1. 
+Purpose	Command
+Initialize Alembic	alembic init alembic
+Create New Migration Script	alembic revision --autogenerate -m "message"
+
+Apply Latest Migrations	alembic upgrade head
+Downgrade One Step	alembic downgrade -1
+Check Current Revision	alembic current
+Show Migration History	alembic history 
+
