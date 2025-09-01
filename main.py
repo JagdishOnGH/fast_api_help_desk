@@ -8,6 +8,7 @@ from app.auth import router as auth
 from app.routers import ticket
 from app.routers import ticket_transfer
 from app.routers import category
+from app.routers import message_ws
 from app.core.seed_category import seed_categories
 
 # Create all tables (development only)
@@ -30,4 +31,5 @@ app.include_router(auth)
 app.include_router(ticket.router)
 app.include_router(ticket_transfer.router)
 app.include_router(category.router)
+app.include_router(message_ws.router)
 

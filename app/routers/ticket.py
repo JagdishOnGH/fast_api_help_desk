@@ -7,16 +7,20 @@ from app.database import get_db
 from app.dependencies import get_current_user # Assuming you have a general get_current_user
 from app.operations import ticket as ticket_ops
 from app.schemas import ticket as ticket_schema
+from app.schemas import ticket_note_create
+
+
 from app.models import user as user_model
 from app.models.user import UserRole
 from app.models.category import Category
 from app.models.subcategory import Subcategory
 from app.models.ticket_transfer import TicketTransfer, TransferStatus
 from app.models.ticket import TicketPriority, TicketStatus
+from app.models.ticket_note import TicketNote
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
 
-@router.get("/", response_model=List[ticket_schema.Ticket])
+@router.get("/", response_model=List[ticket_schema.TicketOut])
 def read_tickets_for_user(
     skip: int = 0,
     limit: int = 100,
@@ -35,6 +39,7 @@ def read_tickets_for_user(
         return ticket_ops.get_tickets(db, agent_id=current_user.id, skip=skip, limit=limit)
     else: # UserRole.user
         return ticket_ops.get_tickets(db, user_id=current_user.id, skip=skip, limit=limit)
+
 
 #create ticket if jwt is valid under user's id acquired from jwt
 
@@ -152,19 +157,24 @@ def request_reopen_ticket(
     
     return ticket_ops.request_reopen_ticket(db, db_ticket)
 
-@router.get("/reopen/requests?user_email={user_email}&username={username}&ticket_title={ticket_title}")
+@router.get("/reopen/requests")
 def get_reopen_requests(
     user_email: str | None = None,
     username: str | None = None,
     ticket_title: str | None = None,
     db: Session = Depends(get_db),
-    current_user: user_model.User = Depends(get_current_user)
-
+    current_user: user_model.User = Depends(get_current_user),
 ):
-    if(current_user.role != UserRole.admin):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can get reopen requests")
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can get reopen requests",
+        )
+
+    # Combine filters if needed
     search_query = user_email or username or ticket_title
     return ticket_ops.get_all_reopen_requests(db, search_query)
+
 
 @router.post("/{ticket_id}/reopen", response_model=ticket_schema.Ticket)
 def reopen_ticket(
@@ -210,3 +220,21 @@ def search_tickets(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can search tickets")
     return ticket_ops.search_tickets(db, search_query)
 
+
+@router.post("/{ticket_id}/note")
+def create_ticket_note(
+    ticket_id: int,
+    note: ticket_note_create.TicketNoteCreate,
+    db: Session = Depends(get_db),
+    current_user: user_model.User = Depends(get_current_user)
+):
+    """Allows a agent to create a note for a ticket."""
+    db_ticket = ticket_ops.get_ticket(db, ticket_id)
+    if not db_ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    
+    if current_user.role != UserRole.agent:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only agents can create notes")
+    ticket_note = TicketNote(ticket_id=ticket_id, agent_id=current_user.id, note_content=note.note)
+    return ticket_ops.create_ticket_note(db, ticket_note)
+   

@@ -40,6 +40,8 @@ class Ticket(Base):
 
    
     messages = relationship("Message", back_populates="ticket")
+
+    notes = relationship("TicketNote", back_populates="ticket")
     
     user = relationship("User", back_populates="created_tickets", foreign_keys=[user_id])
     

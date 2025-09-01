@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.ticket import Ticket as ticket_schema, DashboardStats
 from app.models.category import Category
 from app.models.subcategory import Subcategory
+from app.models.ticket_note import TicketNote
 from typing import Optional
 
 
@@ -17,6 +18,7 @@ from typing import Optional
 def get_ticket(db: Session, ticket_id: int):
     """Gets a single ticket by its ID."""
     return db.query(ticket_model).filter(ticket_model.id == ticket_id).first()
+    
 
 def get_transfer_request(db: Session, ticket_transfer_id: int):
     return db.query(TicketTransfer).filter(ticket_transfer_id == TicketTransfer.id).first()
@@ -226,3 +228,9 @@ def accept_reopen_ticket(db: Session, ticket: Ticket):
     db.commit()
     db.refresh(ticket)
     return ticket
+
+def create_ticket_note(db: Session, ticket_note: TicketNote):
+    db.add(ticket_note)
+    db.commit()
+    db.refresh(ticket_note)
+    return ticket_note

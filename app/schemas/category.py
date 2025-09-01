@@ -63,6 +63,21 @@ class CategoryOut(CategoryBase):
     
     model_config = ConfigDict(from_attributes=True)
 
+#category nameonly out
+class CategoryNameOnlyOut(BaseModel):
+    """Schema for reading a category (used in responses)."""
+    id: int
+    name: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+#subcategories nameonly out
+class SubcategoryNameOnlyOut(BaseModel):
+    """Schema for reading a subcategory (used in responses)."""
+    id: int
+    name: str
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class CategoryUpdate(CategoryBase):
     """Schema for updating a category."""
